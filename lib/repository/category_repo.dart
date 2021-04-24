@@ -13,9 +13,11 @@ class CategoryRepository extends Repository {
     try {
       final response = await _dio.get(API.URI);
       if (response.statusCode == 200) {
-        final category = Category.fromJson(response.data["categories"]);
-print("cat")
-        return category;
+        final categories = response.data["categories"] as List;
+        final items = categories.map((e) => Category.fromJson(e)).toList();
+
+        print("cat $items");
+        return items;
       }
       throw ApiException("Something went wrong, while fetching Data");
     } on SocketException {

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:pie_solution/view/detail/detail.dart';
 import 'package:pie_solution/view/home/home.dart';
 
 class Routes {
@@ -10,6 +11,12 @@ class Routes {
     switch (settings.name) {
       case main:
         return GetPageRoute(page: () => Home());
+        break;
+      case detail:
+        return GetPageRoute(
+            page: () => DetailView(
+                  index: settings.arguments,
+                ));
         break;
       default:
         return GetPageRoute(page: () => Home());

@@ -1,15 +1,20 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:get/get.dart';
 import 'package:pie_solution/api/status.dart';
+import 'package:pie_solution/util/constants.dart';
 import 'package:pie_solution/util/durations.dart';
 import 'package:pie_solution/util/strings.dart';
+import 'package:pie_solution/view/base_widget/custom_sliver_appbar.dart';
+import 'package:pie_solution/view/base_widget/loader.dart';
+import 'package:pie_solution/view/base_widget/loader_with_btn.dart';
+import 'package:pie_solution/view/base_widget/small_bar.dart';
+import 'package:pie_solution/view/home/components/list_item_widget.dart';
 import 'package:pie_solution/viewmodel/category_provider.dart';
-import 'package:rounded_loading_button/rounded_loading_button.dart';
+
+import 'components/show_all_emails.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -17,8 +22,8 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  final RoundedLoadingButtonController _btnController =
-      RoundedLoadingButtonController();
+  bool _isHide = false;
+
   @override
   void initState() {
     // TODO: implement initState
@@ -31,61 +36,81 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     final resHeight = Get.height / 100;
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            title: Text(Strings.appBarTitle),
-            backgroundColor: const Color(0xffe03319),
-            centerTitle: true,
-            expandedHeight: resHeight * 15,
-            floating: true,
-            flexibleSpace: Text(Strings.appBarTitle),
-            pinned: true,
-            systemOverlayStyle: SystemUiOverlayStyle.light,
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate((_, index) {
-              return Consumer(builder: (context, watch, child) {
-                final category = watch(categoryProvider);
-                if (FetchStatus.loading == category.status)
-                  return Center(
-                    child: SpinKitCubeGrid(
-                        duration: Durations.SEC_500, color: Colors.red),
-                  );
-                else if (FetchStatus.error == category.status)
-                  return Center(
-                    child: RoundedLoadingButton(
-                      controller: _btnController,
-                      child: Text("Retry"),
-                      onPressed: _fetchItems,
-                      color: Colors.red,
-                      valueColor: Colors.white,
-                    ),
-                  );
-                return AnimationLimiter(
-                  child: ListView.builder(
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: category.category.length,
-                    itemBuilder: (_, index) {
-                      return AnimationConfiguration.staggeredList(
-                          position: index,
-                          duration: Durations.SEC_500,
-                          child: SlideAnimation(
-                            child: Slidable(
-                              child: ListTile(
-                                title: Text("${category.category[index].name}"),
-                              ),
-                            ),
-                          ));
-                    },
-                    shrinkWrap: true,
+      body: RefreshIndicator(
+        onRefresh: _dragRefresh,
+        child: CustomScrollView(
+          slivers: [
+            CustomSliverAppbar(title: Strings.appBarTitle),
+            SliverList(
+              delegate: SliverChildBuilderDelegate((_, index) {
+                return Container(
+                  color: Colors.purple,
+                  child: Container(
+                    margin: EdgeInsets.only(top: 10),
+                    decoration: kTopLeftRightRadius50,
+                    child: LayoutBuilder(builder: (context, constraints) {
+                      return Column(
+                        children: [
+                          SmallBarWidget(),
+                          Consumer(builder: (context, watch, child) {
+                            final category = watch(categoryProvider);
+                            //If Category items are loading
+                            if (FetchStatus.loading == category.status)
+                              return Loader();
+                            //If an error occurs while fetching items
+                            else if (FetchStatus.error == category.status)
+                              return LoaderWithButton();
+                            //When items are successfully fetched
+                            return Column(
+                              children: [
+                                ShowAllEmails(
+                                  toDisplayEmail: _showEmails,
+                                  isVisible: !_isHide,
+                                ),
+                                AnimationLimiter(
+                                  child: ListView.builder(
+                                    physics: BouncingScrollPhysics(),
+                                    itemCount: category.category.length,
+                                    itemBuilder: (_, index) {
+                                      final _category =
+                                          category.category[index];
+                                      return AnimationConfiguration
+                                          .staggeredList(
+                                              position: index,
+                                              delay: Durations.SEC_500,
+                                              duration: Durations.SEC_500,
+                                              child: SlideAnimation(
+                                                  child: ListItemWidget(
+                                                      category: _category,
+                                                      index: index,
+                                                      toHide: _isHide)));
+                                    },
+                                    shrinkWrap: true,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
+                        ],
+                      );
+                    }),
                   ),
                 );
-              });
-            }, childCount: 1),
-          ),
-        ],
+              }, childCount: 1),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  _showEmails() {
+    setState(() {
+      _isHide = !_isHide;
+    });
+  }
+
+  Future<void> _dragRefresh() async {
+    context.read(categoryProvider).fetchCategories();
   }
 }

@@ -46,6 +46,20 @@ dependencies:
   rounded_loading_button: ^1.0.18
   #Flutter Slideable for slide
   flutter_slidable: ^0.6.0
+  #Expandable Widget
+  expand_widget: ^2.0.0
+  #Flat Icons
+  flat_icons_flutter: 1.0.2
+  #Flutter AlertDialog
+  rflutter_alert: ^2.0.2
+  #Email Launcher
+  email_launcher: ^1.0.0
+  #Url Launcher
+  url_launcher: ^6.0.3
+  #Toast for messages
+  flutter_styled_toast: ^2.0.0
+
+
 
 
 dev_dependencies:
